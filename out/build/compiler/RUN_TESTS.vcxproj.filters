@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Gunes\projects\franka-benchmark-trajectories\out\build\compiler\CMakeFiles\1931b3d54121b398cfbc0b930faf881e\RUN_TESTS_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{C434B4BF-769C-3B9C-B10E-243339C69AC9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
