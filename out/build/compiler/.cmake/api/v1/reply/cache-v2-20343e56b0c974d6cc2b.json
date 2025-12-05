@@ -1135,7 +1135,7 @@
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "COVERAGE_COMMAND-NOTFOUND"
+			"value" : "C:/msys64/ucrt64/bin/gcov.exe"
 		},
 		{
 			"name" : "COVERAGE_EXTRA_FLAGS",
