@@ -7,6 +7,12 @@ Real benchmarks for dynamical identification on Franka Emika Panda, available ta
 
 To collect real training data, run PID.sh or CIC.sh and supervise the robot throughout the generation process. It is safe to assume that data collection for a single trajectory will take twice the time prescribed for the controller.
 
+### Connecting to Franka
+
+### Compiling the cpp Controllers
+
+### Sequential Actuation and Data Collection
+
 ### PID Controller
 
 PID controller randomizes over:
