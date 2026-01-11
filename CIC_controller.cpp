@@ -8,14 +8,15 @@
 #include <string>
 #include <fstream>
 
-#include <Eigen/Dense>
-
-#include <franka/duration.h>
+// ignore error warnings if eigen is present
+#include <Eigen/Dense> 
+// ignore error warnings if libfranka is present
+#include <franka/duration.h> 
 #include <franka/exception.h>
 #include <franka/model.h>
 #include <franka/robot.h>
-
-#include "franka_custom_controller/examples_common.h"
+// ignore error warnings if include folder has examples_common.h, examples_common.cpp
+#include "include/examples_common.h" 
 
 // TORQUE SATURATION CHECK
 void saturatedTorque(std::array<double, 7>& tau_cmd, const std::array<double, 7>& limits) {
@@ -29,20 +30,25 @@ void saturatedTorque(std::array<double, 7>& tau_cmd, const std::array<double, 7>
 }
 
 // MAIN CONTROL LOOP
-int main(int) {
-    for (int i = 0; i < argv[2]; ++i) {
+int main(int argc, char** argv) {
+    int num_trials = std::stoi(argv[2]);
+    std::string task_type = argv[1];
+    for (int i = 0; i < num_trials; ++i) {
         std::cout << "Iteration: " << i << std::endl;
         auto robot_ip = "169.254.243.49"; // may need to change this
 
         std::default_random_engine generator;
         generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
         std::uniform_real_distribution<double> radii(0.1,1.0);
-        std::uniform_int_distribution<int> radii(20,80);
+        std::uniform_int_distribution<int> periods(20,80);
+        std::bernoulli_distribution sign(0.5);
         const double radius_t = radii(generator);
         const double period_t = periods(generator);
+        const int sign_t = sign(generator) ? 1 : -1;
         double time{0.0};
         const double MAX_TIME = 10.0; 
         const double alpha{0.05};
+        const int num_itr = 4000;
 
         Eigen::VectorXd tau_d_prev = Eigen::VectorXd::Zero(7);
         Eigen::VectorXd tau_d_filtered = Eigen::VectorXd::Zero(7);
@@ -56,28 +62,25 @@ int main(int) {
         };
         std::vector<LogEntry> log;
 
-        std::uniform_real_distribution<double> ktps(30,50);
-        std::uniform_real_distribution<double> krps(5,10);  
-        const double translational_stiffness = ktps(generator);
-        const double rotational_stiffness = krps(generator);
-        Eigen::MatrixXd stiffness(6, 6), damping(6, 6);
-        stiffness.setZero();
-        stiffness.topLeftCorner(3, 3) << translational_stiffness * Eigen::MatrixXd::Identity(3, 3);
-        stiffness.bottomRightCorner(3, 3) << rotational_stiffness * Eigen::MatrixXd::Identity(3, 3);
+        Eigen::VectorXd translational_stiffness_array(3, 1), rotational_stiffness_array(3, 1);
+        Eigen::MatrixXd stiffness(6, 6), damping(6,6);
 
-        damping.setZero();
-        damping.topLeftCorner(3, 3) << 4.0 * sqrt(translational_stiffness) *
-                                            Eigen::MatrixXd::Identity(3, 3);
-        damping.bottomRightCorner(3, 3) << 2.0 * sqrt(rotational_stiffness) *
-                                                Eigen::MatrixXd::Identity(3, 3);
+        translational_stiffness_array = Eigen::VectorXd::Random(3, 1)*10 + Eigen::VectorXd::Constant(3, 40.0);
+        rotational_stiffness_array = Eigen::VectorXd::Random(3, 1)*2.5 + Eigen::VectorXd::Constant(3, 7.5);    
+
+        stiffness.topLeftCorner(3, 3) = translational_stiffness_array.asDiagonal();
+        stiffness.bottomRightCorner(3, 3) = rotational_stiffness_array.asDiagonal();
+
+        damping.topLeftCorner(3, 3) = (4.0 * translational_stiffness_array.array().sqrt()).matrix().asDiagonal();
+        damping.bottomRightCorner(3, 3) = (2.0 * rotational_stiffness_array.array().sqrt()).matrix().asDiagonal();  
 
         const double ki{0.35};
 
         std::cout
         << "The randomized controller parameters are:\n"
-        << "Translational Stiffness: " << translational_stiffness << "\n"
-        << "Rotational Stiffness: " << rotational_stiffness << "\n"
-        << "Integral Gain: " << ki << "\n"
+        << "Nominal Translational Stiffness: " << translational_stiffness_array.transpose() << "\n"
+        << "Nominal Rotational Stiffness: " << rotational_stiffness_array.transpose() << "\n"
+        << "Nominal Integral Gain: " << ki << "\n"
         << "Stiffness Matrix:\n" << stiffness << "\n"
         << "Damping Matrix:\n" << damping <<
         std::endl;
@@ -98,20 +101,21 @@ int main(int) {
 
             std::array<double, 7> joint_middle{};
             for (size_t i = 0; i < 7; ++i) {
-                joint_middle[i] = (joint_position_lower[i] + joint_position_upper[i]) / 2.0;
+                joint_middle[i] = (joint_position_lower[i] + joint_position_upper[i]) / 2.0
+                + 0.2 * (joint_position_upper[i] - joint_position_lower[i])*((double)generator()/generator.max() - 0.5);
             }
-            joint_middle[6] = 0.785398;
+            // joint_middle[6] = 0.785398 ;
 
+            std::cout << "Initial Joint Configuration:" << std::endl;
+            for (const auto& joint : joint_middle) {
+                std::cout << joint << " ";
+            }
+            std::cout << std::endl;
             MotionGenerator motion_generator(0.2, joint_middle);
             
-            std::cout << "WARNING: This example will move the robot! "
-                        << "Please make sure to have the user stop button at hand!" << std::endl
-                        << "Press Enter to continue..." << std::endl;
-            std::cin.ignore();
+            std::cout << "Moving the robot to initial joint configuration." << std::endl;
             robot.control(motion_generator);
-            std::cout << "Finished moving to initial joint configuration." << std::endl
-                        << "Press Enter to start the task..." << std::endl;
-            std::cin.ignore();
+            std::cout << "Finished moving to initial joint configuration." << std::endl;
 
             franka::RobotState initial_state = robot.readOnce();
 
@@ -143,48 +147,36 @@ int main(int) {
                 Eigen::Vector3d position(transform.translation());
                 Eigen::Quaterniond orientation(transform.rotation());
 
-                switch (argv[1])
-                {
-                case "VS":
+                if (task_type == "VS") {
                     position_d(0) = position_d_start(0) + sin(itr / period_t) * radius_t;
                     position_d(1) = position_d_start(1) + cos(itr / period_t) * radius_t;
-                    position_d(2) = position_d_start(2) - 0.1 + sign * itr / num_itr;
-                    break;
-                
-                case "FS":
+                    position_d(2) = position_d_start(2) - 0.1 + sign_t * itr / num_itr;
+                }
+                else if (task_type == "FS") {
                     position_d(0) = position_d_start(0) + sin(itr / period_t) * radius_t;
                     position_d(1) = position_d_start(1) + cos(itr / period_t) * radius_t;
                     position_d(2) = position_d_start(2) - 0.1 + 0.2 * itr / num_itr;
-                    break;
-
-                case "FC":
-                    position_d(0) = position_d_start(0)
+                }
+                else if (task_type == "FC") {
+                    position_d(0) = position_d_start(0);
                     position_d(1) = position_d_start(1) + sin(itr / period_t) * radius_t;
                     position_d(2) = position_d_start(2) + cos(itr / period_t) * radius_t;
-                    break;
-
-                case "PULL":
-                    position_d(0) = position_d_start(0)
-                    position_d(1) = position_d_start(1)
-                    position_d(2) = position_d_start(2)
-                    break;
-
-                case "PUSH":
-                    position_d(0) = position_d_start(0)
-                    position_d(1) = position_d_start(1)
-                    position_d(2) = position_d_start(2)
-                    break;
-
-                default:
-                    position_d(0) = position_d_start(0)
+                }
+                else if (task_type == "PULL") { // NOT YET IMPLEMENTED
+                    std::cout << "PULL task is not yet implemented." << std::endl;
+                }
+                else if (task_type == "PUSH") { // NOT YET IMPLEMENTED
+                    std::cout << "PUSH task is not yet implemented." << std::endl;
+                }
+                else { // FC by default
+                    position_d(0) = position_d_start(0);
                     position_d(1) = position_d_start(1) + sin(itr / period_t) * radius_t;
                     position_d(2) = position_d_start(2) + cos(itr / period_t) * radius_t;
-                    break;
                 }
 
                 // POS ERROR
                 Eigen::Matrix<double, 6, 1> error;
-                error.head(3) << position_d - pos;
+                error.head(3) << position_d - position;
                 error_sum.head(3) += error.head(3);
 
                 // ORN ERROR
@@ -198,7 +190,7 @@ int main(int) {
                 // TOTAL ERROR
                 Eigen::VectorXd tau_task(7), tau_d(7);
 
-                // CIC CONTROLLER
+                // PI + Joint Velocity CONTROLLER
                 tau_task << jacobian.transpose() * (stiffness * error + damping * (jacobian * dq) + ki * error_sum * dt);
                 tau_d << tau_task + coriolis;
                 tau_d_filtered = (1.0 - alpha) * tau_d_prev + alpha * tau_d;      
@@ -216,44 +208,51 @@ int main(int) {
 
             robot.control(impedance_control_callback);
 
-            try {
-                std::ostringstream filename;
-                filename << "log" << task << task_params << PID_params <<".csv"
-
-                std::ofstream file(filename.str());
-                if (!file.is_open()) {
-                    throw std::runtime_error("Can't open the file");
-                }
-
-                file << "tau0,tau1,tau2,tau3,tau4,tau5,tau6,"
-                    << "px,py,pz,"
-                    << "qx,qy,qz,qw,"
-                    << "q0,q1,q2,q3,q4,q5,q6\n";
-
-                for (const auto& entry : log) {
-                    for (double tau : entry.torque) file << tau << ",";
-                    file << entry.ee_position(0) << ",";
-                    file << entry.ee_position(1) << ",";
-                    file << entry.ee_position(2) << ",";
-                    file << entry.ee_orientation.x() << ","
-                        << entry.ee_orientation.y() << ","
-                        << entry.ee_orientation.z() << ","
-                        << entry.ee_orientation.w() << ",";
-                    for (double q : entry.joint_positions) file << q << ",";
-                    file.seekp(-1, std::ios_base::cur); 
-                    file << "\n";
-                }
-
-                file.close();
-                std::cout << "File saved.\n";
-            } catch (const std::exception& e) {
-                std::cerr << "Error during the file save: " << e.what() << std::endl;
-                return -1;
-            }
-
         } catch (const franka::Exception& ex) {
             std::cout << ex.what() << std::endl;
         }
+
+        try {
+
+        std::string period_str = std::to_string(period_t);
+        std::string radius_str = std::to_string(radius_t);
+        std::string kpt_str = std::to_string(translational_stiffness_array.mean());
+        std::string kpr_str = std::to_string(rotational_stiffness_array.mean());
+        std::string ki_str = std::to_string(ki);
+
+        std::ostringstream filename;
+        filename << "data/" << "log" << argv[1] << i << "_period" << period_t << "_radius" << radius_t << "_Kp" 
+                << kpt_str << "_Kr" << kpr_str << "_Ki" << ki_str <<".csv";
+
+        std::ofstream file(filename.str());
+        file.open(filename.str());
+        file << "tau0,tau1,tau2,tau3,tau4,tau5,tau6,"
+            << "px,py,pz,"
+            << "qx,qy,qz,qw,"
+            << "q0,q1,q2,q3,q4,q5,q6\n";
+
+        for (const auto& entry : log) {
+            for (double tau : entry.torque) file << tau << ",";
+            file << entry.ee_position(0) << ",";
+            file << entry.ee_position(1) << ",";
+            file << entry.ee_position(2) << ",";
+            file << entry.ee_orientation.x() << ","
+                << entry.ee_orientation.y() << ","
+                << entry.ee_orientation.z() << ","
+                << entry.ee_orientation.w() << ",";
+            for (double q : entry.joint_positions) file << q << ",";
+            file.seekp(-1, std::ios_base::cur); 
+            file << "\n";
+        }
+
+        file.close();
+        std::cout << "File saved.\n";
+
+        } catch (const std::exception& e) {
+            std::cerr << "Error during the file save: " << e.what() << std::endl;
+            return -1;
+        }
+
     }
   return 0;
 }
