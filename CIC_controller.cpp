@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         const double period_t = periods(generator);
         const int sign_t = sign(generator) ? 1 : -1;
         double time{0.0};
-        const double MAX_TIME = 10.0; 
+        const double MAX_TIME = 4.0; 
         const double alpha{0.05};
         const int num_itr = 4000;
 
