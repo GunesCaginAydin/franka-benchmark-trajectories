@@ -11,13 +11,13 @@ g++ -std=c++17 CIC_controller.cpp include/examples_common.cpp -o controller.exe 
 echo "Finished compiling."
 
 echo "Executing the controller for VS, FS and FC tasks for 100 trajectories each."
-./controller.exe VS 1
+./controller.exe VS 100
 echo "Finished VS tasks."
 echo "========================"
-./controller.exe FS 1
+./controller.exe FS 100
 echo "Finished FS tasks."
 echo "========================"
-./controller.exe FC 1
+./controller.exe FC 100
 echo "Finished FC tasks."
 echo "========================"
 echo "Finished execution. Data is found under data/ folder."
