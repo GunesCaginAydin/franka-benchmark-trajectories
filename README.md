@@ -16,7 +16,9 @@ Ubuntu 24.04 (Noble Numbat)
 
 <h4> Libraries </h4>
 libfranka (follow build directives from https://github.com/frankarobotics/libfranka) <br>
-Eigen3 (install binary directly from https://libeigen.gitlab.io/)
+Eigen3 (install binary directly from https://libeigen.gitlab.io/) <br>
+
+!Eigen3 and libfranka header files has to be under the directory /usr/include/. For any other locations, update library references under run.sh.
 
 <h4> Hardware </h4>
 Franka Robotics robot with FCI feature installed, Network connection to robot (1000BASE-T Ethernet recommended) <br> <br>
