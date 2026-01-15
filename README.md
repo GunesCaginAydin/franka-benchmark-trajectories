@@ -31,6 +31,7 @@ Expected output:
 <br>
    /usr/lib/libfranka.so -> libfranka.so.0.19.0
 
+
 <br>
    ls /usr/include/franka/
 <br>
@@ -40,12 +41,14 @@ Expected output:
    gripper_state.h            lowpass_filter.h         robot.h
    ...
 
+
 <br>
    dpkg -l | grep libfranka
 <br>
 Expected output:
 <br>
    ii  libfranka  0.19.0  amd64  libfranka - Franka Robotics C++ library
+
 
 <br>
    ls /usr/include/Eigen3
