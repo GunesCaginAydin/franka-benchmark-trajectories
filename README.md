@@ -25,41 +25,54 @@ Eigen3 (install binary directly from https://libeigen.gitlab.io/)
 To verify that the libraries are correctly installed, copy and paste the below scripts into a terminal.
 <br>
 <br>
-   ls -l /usr/lib/libfranka.so
-<br>
+
+---
+
+```
+ls -l /usr/lib/libfranka.so
+```
 Expected output:
-<br>
-   /usr/lib/libfranka.so -> libfranka.so.0.19.0
+```
+/usr/lib/libfranka.so -> libfranka.so.0.19.0
+```
 
+<br>
 
-<br>
-   ls /usr/include/franka/
-<br>
+---
+```
+ls /usr/include/franka/
+```
 Expected output:
-<br>
-   active_control_base.h      active_torque_control.h  control_tools.h
-   gripper_state.h            lowpass_filter.h         robot.h
-   ...
+```
+active_control_base.h      active_torque_control.h  control_tools.h
+gripper_state.h            lowpass_filter.h         robot.h
+...
+```
 
+<br>
 
-<br>
-   dpkg -l | grep libfranka
-<br>
+---
+```
+dpkg -l | grep libfranka
+```
 Expected output:
-<br>
-   ii  libfranka  0.19.0  amd64  libfranka - Franka Robotics C++ library
+```
+ii  libfranka  0.19.0  amd64  libfranka - Franka Robotics C++ library
+```
 
+<br>
 
-<br>
-   ls /usr/include/Eigen3
-<br>
+---
+```
+ls /usr/include/Eigen3
+```
 Expected output:
-<br>
-   Dense.h                    Core.h
-   LU.h                       Jacobi.h
-   ...
-<br>
-
+```
+Dense.h                    Core.h
+LU.h                       Jacobi.h
+...
+```
+---
 <h4> Hardware </h4>
 Franka Robotics robot with FCI feature installed, Network connection to robot (1000BASE-T Ethernet recommended) <br> <br>
 To compile the programs, the directory <b>must have</b> dedicated folders called <i>data</i> and <i>include</i>. <i>include</i> folder should have <i>examples_common.cpp</i> and <i>examples_common.h</i> which can be downloaded from https://github.com/frankarobotics/libfranka. 
